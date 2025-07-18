@@ -8,3 +8,5 @@ thanks to the play head indicators.
 
 There are a few other bits of functionality added/moved, in an attempt to make the script more useable from the norns, without relying on a foot controller. 
 It still needs a few tweaks in that regard. But overall it works great and got me through a performance, and many rehearsals. 
+
+<img src="https://ululo.co/image/aFoot.jpg" width="300" height="100%">

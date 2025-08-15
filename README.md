@@ -10,6 +10,7 @@ You fill the system with live audio material, it plays it back, sort of.
 
 There are six loops that range from 0 to 49 seconds in length. Each loop is constantly playing and has a chance to flip the direction the playhead is moving in. Each loop is set to a certain stereo position, and periodically these positions get shuffled. 
 
+# add performance demo video
 
 
 **CONTROLS**
@@ -59,11 +60,11 @@ An approach that continues to embrace my tenents of slow play and surrender. Whe
 
 This process led to the creation of my album <a href="https://ululo.co/page_012">Iuvante</a>, which led to my performance, and now has led to the release of this script to the community. 
 
-In preperation for sharing with everyone I refactored the code to enable a very playable interface from the Norns alone. I have included the foot control part of the script, but I will not publicly support it. If you have a midi foot controller, and would like to use it with this script, get in touch with me and we will work it out. In fact, this could probably be a great intro to coding for Norns, to make the adjustments that might be needed for your setup. And I will be more than happy to tutor you! 
+In preperation for sharing with everyone I refactored the code to enable a very playable interface from the Norns alone, as I hope is evidenced by the performance demo video above. I have included the foot control part of the script, but I will not publicly support it. If you have a midi foot controller, and would like to use it with this script, get in touch with me and we will work it out. In fact, this could probably be a great intro to coding for Norns, to make the adjustments that might be needed for your setup. And I will be more than happy to tutor you! 
 
 To that end, I hope you enjoy making some music with this little looper. I know I have. 
 
 Thanks
 - ululo
 
-<img src="https://ululo.co/image/aFoot.jpg" width="300" height="100%">
+<img src="https://ululo.co/image/aFoot.jpg" width="600" height="100%">

@@ -1,4 +1,6 @@
 # foot foot
+<img src="footfoot.png"></img>
+
 
 This is just another looper. 
 

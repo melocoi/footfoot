@@ -1,13 +1,141 @@
---a foot switch interface
+-- 
+-- Foot Foot
+-- 
+--      just_another_looper
+--               l  l        l    l
+-- @ululo   l  l  l l   l    l  l l  l
+-- l l l l l l l l l l l l l l l l l l l l l
+-- vvvvvvvvvvvvvvvvvvvvvvvvv
+-- ////////////////////////////////////////
+-- controls for beautiful /////////// 
+-- uncontrollable moments ///////////
+-- ----------------------------------------
+-- E2 - rec level 
+-- E3 - pre level 
+-- ----------------------------------------
+-- K2 --------- start record
+-- K2 again --- stop record
+-- K2 (long) --- clear record
+-- ----------------------------------------
+-- K3 - switch loop
+-- ----------------------------------------
+-- K1 + K2 - flip play direction
+-- K1 + K2 (long) - turn on/off 
+--                  auto flip
+-- ----------------------------------------
+-- K1 + K3 - micro loop
+-- ----------------------------------------
+-- K1 + E1 - loop length
+--
+-- 
+-- ////////////////////////////////////////
+-- ////////////////////////////////////////
+-- though it isn't documented
+-- there is a helper script that
+-- will allow a midi foot controller
+-- to drive the script
+-- contact me to get help 
+-- setting it up for your system
+--
+--
+--
+-- thanks
+--
+--
+-- 
+--
+--
+-- ////////////////////////////////////////
+--
+--
+-- ////////////////////////////////////////
+-- ////////////////////////////////////////
+--
+-- why aren't you playing 
+-- music yet ? ? ? ? ?
+--
+--
+-- ////////////////////////////////////////
+-- ////////////////////////////////////////
+--
+--
+--
+-- fine,  here is a bunny
+--
+--
+--              ,\
+--             \\\,_
+--               \` ,\
+--          __,.-" =__)
+--         1."        )
+--    ,_/   ,    \/\_
+--    \_|    )_-\ \_-`
+--       `-----` `--`
+--
+--
+--
+-- ascii art by
+-- Joan Smith
+-- found on the
+-- ascii art
+-- archive
+--
+--
+--
+--
+--
+-- ////////////////////////////////////////
+-- go play music
+--
+--
+--
+--
+-- ////////////////////////////////////////
+-- ////////////////////////////////////////
+--
+--
+-- but
+--
+--
+-- if you must know
+--
+--
+-- I named this script
+-- after an old pet 
+-- rabbit
+-- which was named after
+-- a cat
+-- from a Shaggs song
+-- the rabbit died
+--
+-- 
+--
+--
+--
+-- the
+--
+--       End
+--
+--
+-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
+
+-- //////////////////////////////////////////////////////////////////////////////////
+-- //////////////////////////////////////////////////////////////////////////////////
+-- //////////////////////////////////////////////////////////////////////////////////
+-- //////////////////////////////////////////////////////////////////////////////////
+-- now the actual code begins!!!
 ---------------------------------
+
+
+
 -- for UI drawing
 local rects = include("lib/rectangles")
 
 -- Constants
-local column_x = {7,26,46,66,86,106} -- Fixed column X positions (6 columns) TODO: base on the aFoot UI layout
-local rect_speed = {1,1,1,1,1,1}              -- Speed at which rectangles grow
+local column_x = {7,26,46,66,86,106}     -- Fixed column X positions (6 columns)
+local rect_speed = {1,1,1,1,1,1}         -- Speed at which rectangles grow
 
 -- State
 local active_rect = nil                  -- Currently growing rectangle
@@ -15,14 +143,17 @@ local current_column = nil               -- Current selected column X
 local key2_down = false                  -- Tracks if key 2 is held
 local grow_direction = "down"            -- "up" or "down", fixed per key press
 local start_y = 6                        -- Y starting point for growing
-
+local clearing = false                   -- to clear loop
+local clear_time = nil
+local clear_timer = nil
+local clear_threshold = 2                -- time for long press to clear loop
 -------------------------------------
 
 
 
 sc = include('lib/sftct')
 ft = include('lib/footie')
---scrn = include('lib/scrn')
+
 --------------------------
 --------------------------
 -- screen controls  ------
@@ -45,9 +176,11 @@ lEnd = {14,22,27,30,33,35} --as duration
 scPre = {1,1,1,1,1,1}
 scLev = {1,1,1,1,1,1}
 scRte = {1,1,1,1,1,1}
+scFlip = {1,1,1,1,1,1}
 scPan = {0.3,0.6,-0.6,0.9,-0.9,-0.3}
 encPre = {"pre_1","pre_2","pre_3","pre_4","pre_5","pre_6"}
 encLev = {"lev_1","lev_2","lev_3","lev_4","lev_5","lev_6"}
+loopLength = {"loop_1","loop_2","loop_3","loop_4","loop_5","loop_6"}
 loopTimer = {loop1,loop2,loop3,loop4,loop5,loop6}
 
 fall = {1,1,1,1,1,1}
@@ -64,17 +197,21 @@ posPos = 1
 curRec = 0
 recording = false
 fTime = 26
+K1 = false
 
+-- timers to trigger flipping and flopping actions
 flipper = metro.init()
 flipper.time = math.random(1,26)
 flipper.event = function()
   flip()
+  -- flip direction of playback
 end
 
 flopper = metro.init()
 flopper.time = math.random(1,26)
 flopper.event = function()
   flop()
+  --flop around the stereo image of the loops
 end
 
 --------------------------
@@ -105,9 +242,7 @@ function init()
  
   flipper:start()
   flopper:start()
- -- clock.run(checkActiveRecs)
-  --params:set(“clock_tempo”, 30)
- -- redraw()
+
   
 end
 
@@ -118,7 +253,8 @@ function checkRecs(v)
 end
 
 function flip(v)
-  
+  -- changes direction of playback for selected voice
+  -- if voice is not specified, one will be selected randomly
   local voice = math.random(1,6)
   local tV = 0
   local rate = {-1,1}
@@ -129,34 +265,37 @@ function flip(v)
   print('not flipping on purpose')
   elseif v == nil then
     tV = voice
-    softcut.rate(tV,rate[dir])
-    scRte[tV] = rate[dir]
+    if scFlip[tV] == 1 then
+      softcut.rate(tV,rate[dir])
+      scRte[tV] = rate[dir]
+    end
   elseif not(v == nil) then
     tV = v
-    scRte[tV] = scRte[tV]*(-1)
-    softcut.rate(tV,scRte[tV])
-    --scRte[tV] = rate[dir]
+    if scFlip[tV] == 1 then
+      scRte[tV] = scRte[tV]*(-1)
+      softcut.rate(tV,scRte[tV])
+    end        
+    
   end
   
- 
   flipper.time = math.random(1,fTime)
-  print(tV,rate[dir],'dir')
+  print('voice',tV,rate[dir],'dir')
   
 end
 
 function flop(v)
-  
+  -- shifts the stereo image of the loops
   shuffle(scPan)
   
   for i = 1, #scPan do
-    --tV = voice
     softcut.pan(i,scPan[i])
-     print(i,scPan[i],'pan')
+     print('voice',i,scPan[i],'pan')
   end
   flopper.time = math.random(1,fTime)
 end
 
 function shuffle(tbl)
+  -- helper function that rearranges the pan settings
   for i = #tbl, 2, -1 do
     local j = math.random(i)
     tbl[i] , tbl[j] = tbl[j] , tbl[i]
@@ -171,36 +310,110 @@ function updateLoops(v,t)
   
 end
 
+function clearLoop()
+  -- to erase the currently selected loop
+  softcut.buffer_clear_region(lStart[curRec+1]-1,lEnd[curRec+1]+2,0,0) -- a bit over the buffer length to ensure deletion
+  dVlevel[curRec+1] = 1
+  clearVox(curRec+1)
+  
+  print("loop", curRec + 1 , "cleared",(lStart[curRec+1]-1) + (lEnd[curRec+1]+2))
+end
+
 function key (n,z)
   
-  -- KEY 2 clears current loop
+  if n == 1 and z == 1 then
+    K1 = true
+  end
+  
+  if n == 1 and z == 0 then
+    K1 = false
+  end
+  
+  -- KEY 2 to start RECORDING, KEY 2 again to STOP RECORDING
+  -- KEY 2 LONG PRESS to CLEAR loop
+  -- KEY 1 and KEY 2 flips direction of track
+  -- KEY 1 and KEY 2 LONG PRESS turns off/on auto flipping for track.
   if n == 2 and z == 1 then
-    
-    softcut.buffer_clear_region(lStart[curRec+1]-1,lEnd[curRec+1]+2,0,0) -- a bit over the buffer length to ensure deletion
-    dVlevel[curRec+1] = 1
-    clearVox(curRec+1)
-    --curRec = (curRec - 1) % 6
-    --ft.setVoice(curRec + 1)
-    print("loop", curRec + 1 , "cleared",(lStart[curRec+1]-1) + (lEnd[curRec+1]+2))
-    
+    if K1 then -- if key one is held, flip current track
+      print("flip flip")
+      flip(curRec+1)
+      
+      clearing = true
+      clear_time = util.time()
+      clear_timer = clock.run(function()
+          clock.sleep(clear_threshold)
+          if clearing and (util.time() - clear_time) >= clear_threshold then
+            print("flipping flipped")
+            scFlip[curRec+1] = scFlip[curRec+1] * -1
+           
+          end
+      end)
+      
+    else 
+      
+      if recording then
+        softcut.rec_level(curRec+1,0)
+        handle_rectangle_key(curRec+1, 0)
+        recording = false
+        print(recording)
+      else
+        softcut.rec_level(curRec+1,1)
+        ft.setRec(curRec+1)
+        handle_rectangle_key(curRec+1, 1)
+        recording = true
+        print(recording)
+      end
+      
+      clearing = true
+      clear_time = util.time()
+      clear_timer = clock.run(function()
+          clock.sleep(clear_threshold)
+          if clearing and (util.time() - clear_time) >= clear_threshold then
+            print("long press detected... clearing loop")
+            softcut.rec_level(curRec+1,0)
+            handle_rectangle_key(curRec+1, 0)
+            recording = false
+            clearLoop()
+            
+          end
+      end)
+    end
   end
   
-  -- KEY 3 selects loop
+  if n == 2 and z == 0 then
+    clearing = false
+  end
+  
+  
+  -- KEY 3 selects loop 
+  -- KEY 1 and KEY 3 does micro loop
    if n == 3 and z == 1 then
-    
-    curRec = (curRec + 1) % 6
-    ft.setVoice(curRec + 1)
-    print(curRec + 1)
-    
+    if K1 then
+      ft.microLoop(z)
+    else
+      curRec = (curRec + 1) % 6
+      ft.setVoice(curRec + 1)
+      print('recording armed for voice',curRec + 1)
+    end
   end
   
+  if n == 3 and z == 0 then
+    if K1 then
+      ft.microLoop(z)
+    end
+  end
   
 end
 
 function enc (n,d)
 
   if n==1 then
-    if micro then
+    if K1 then
+      
+    updateLoops(curRec+1,util.clamp(lEnd[curRec + 1] + (d * 0.5),0,49))
+    params:set(loopLength[curRec+1],lEnd[curRec + 1])
+    
+    elseif micro then
       posOff = posOff + (d*0.01)
       softcut.query_position(curRec+1)
     else
@@ -213,27 +426,40 @@ function enc (n,d)
   if n == 2 then
     scLev[curRec + 1] = util.clamp(scLev[curRec + 1] + (d * 0.06),0,1)
     sc.setLevel(curRec+1,scLev[curRec+1])
-    --params:set(encPre[curRec+1], scPre[curRec+1])
+    
     print(scLev[curRec+1])
-    --redraw()
+    
   end
   
   -- ENCODER 3 controls PRE
   if n == 3 then
     scPre[curRec + 1] = util.clamp(scPre[curRec + 1] + (d * 0.06),0,1)
     sc.setPre(curRec+1,scPre[curRec+1])
-    --params:set(encPre[curRec+1], scPre[curRec+1])
+    
     print(scPre[curRec+1])
-    --redraw()
+    
   end
 
 end
 
 function refresh()
-  --update()
+  
   redraw()
-  --checkActiveRecs()
+  
 end
+
+
+------------------------------------------------------------------
+------------------------------------------------------------------
+----------------- ___________________ ----------------------------
+-----------------|                   |----------------------------
+-----------------|   /\    /\  /\    |----------------------------
+-----------------|  /  \  /  \/  \   |----------------------------
+-----------------| /    \/        \  |----------------------------
+-----------------|___________________|----------------------------
+----------------- draw screen         ----------------------------
+------------------------------------------------------------------
+------------------------------------------------------------------
 
 function redraw()
   screen.clear()
@@ -512,7 +738,7 @@ end
 function update()
   rects:update()
   
-  --redraw()
+  
 end
 
 -- Draw the growing rectangle with wrap support

@@ -1,3 +1,5 @@
+-- a class to handle softcut things
+
 local sc = {}
 
 
@@ -35,9 +37,7 @@ function sc.init()
     
   	softcut.filter_dry(i, 1)
   	
-  	--softcut.pre_filter_lp(i,1)
-  	--softcut.filter_fc(i,3840)
-  	--softcut.pre_filter_rq(i,4)
+  
   	
   	softcut.phase_quant(i,0.125)
   	

@@ -1,5 +1,7 @@
--- rectangles.lua
--- A module to manage wrapping and fading vertical rectangles
+-- 
+-- This class allows for the drawing and erasing of recorded areas on the GUI
+--
+--
 
 local Rectangles = {}
 Rectangles.__index = Rectangles
@@ -21,24 +23,26 @@ function Rectangles:add(x, y, w, h, color, direction, v, loop_start, loop_end)
     color = color or 16,
     direction = direction or "down",
     loop_start = loop_start or 6,
-    loop_end = loop_end or 64, -- make based on lEnd[v] 
+    loop_end = loop_end or 64, -- based on lEnd[v] 
     fade = scPre[v], -- fade based on pre value of voice
     vox = v
   })
 end
 
 function Rectangles:update()
+  
   for i = #self.rects, 1, -1 do
     local r = self.rects[i]
-    --r.fade = r.fade - 0.01
-    r.fade = scPre[r.vox]
   
-      --r.color = math.floor(r.color * r.fade)
-      r.color = math.ceil(r.color*scPre[r.vox])
+    r.fade = scPre[r.vox]
+    r.color = math.ceil(r.color*scPre[r.vox])
+     
     if r.color <= 0 then
-      table.remove(self.rects, i) -- this should remove based on color beng 0
+      table.remove(self.rects, i) 
     end
+    
   end
+  
 end
 
 function Rectangles:draw()

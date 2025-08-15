@@ -1,4 +1,16 @@
 --footie
+--
+--
+-- this script will allow for you to hook up a midi foot controller to control things
+-- I use it with a foot controller I made with a teensy.
+-- I will not publicly support this. I leave it here if you want to tinker. 
+-- and I am happy to help you make it work for your system just reach out to me
+-- thanks
+-- good luck
+--
+--    ululo
+--
+--
 local ft = {}
 
 
@@ -41,6 +53,7 @@ footie.event = function(data)
   local d = midi.to_msg(data)
   
   if d.type == "cc" then
+    -- for an expression pedal function
     if d.cc == 30 then
       expCC = (d.val/113) 
       expCC = expCC * 100
@@ -150,7 +163,7 @@ function quietCut()
   end
 end
 
-function microLoop( v )
+function ft.microLoop( v )
   --create micro loop of current voice while button is pressed
   local i = curRec + 1
   
@@ -174,7 +187,7 @@ function setSL( vox ) -- is this where to add the color updates for rects????
   dVlevel[vox] = dVlevel[vox]*scPre[vox]
   --update()
   --redraw()
-  print(vox , dVlevel[vox])
+  --print(vox , dVlevel[vox])
 end
 
 function ft.setRec( vox ) -- this is where to call the rect handler

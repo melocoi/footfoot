@@ -1,12 +1,67 @@
-footfoot
+# foot foot
 
-an update of aFoot. 
+This is just another looper. 
 
-The big change here is making the visuals more useful to performance. Now you can see where, on the tape, material has been recorded, or at least when you have pressed record. 
-There is also an indication of the preservation of the recorded material. Now it is very easy to see which tracks have material and when they might play again, 
-thanks to the play head indicators.
+Intended for intentionally unintentional playback systems. 
 
-There are a few other bits of functionality added/moved, in an attempt to make the script more useable from the norns, without relying on a foot controller. 
-It still needs a few tweaks in that regard. But overall it works great and got me through a performance, and many rehearsals. 
+You fill the system with live audio material, it plays it back, sort of.
+
+There are six loops that range from 0 to 49 seconds in length. Each loop is constantly playing and has a chance to flip the direction the playhead is moving in. Each loop is set to a certain stereo position, and periodically these positions get shuffled. 
+
+
+
+**CONTROLS**
+
+Here are the specific controls...
+
+- E2 - rec level -- indicated by brightness of track outline
+
+- E3 - pre level -- indicated by brightness of lower track portion
+
+----------------------------------------
+
+- K2 --------- start record -- begins drawing rectangle
+
+- K2 again --- stop record  -- stops drawing rectangle
+
+- K2 (long) --- clear record 
+
+----------------------------------------
+
+- K3 - switch loop -- indicated by outline around track
+
+----------------------------------------
+
+- K1 + K2 - flip play direction -- play head direction changes
+
+- K1 + K2 (long) - turn on/off auto flip
+
+----------------------------------------
+
+- K1 + K3 - micro loop -- play head freezes
+
+----------------------------------------
+
+- K1 + E1 - loop length -- indicated by size of blank space on track
+
+
+# story time
+
+This script is the result of my efforts to implement a foot controller to allow for hands free live sampling with my various acoustic instruments. Hence the name **foot foot**. It is also the reason some parts of the system such as the flipping and the flopping of the sounds happen automatically and aperiodically. Along with the asymetry of the loop lengths, this creates an ever evolving bed of loops that go in and, mostly, out of phase with eachother. Rendering the simplest of phrases into a never ending, or thought of, stream of variations. Think Eliane Radigue's feedback works, or Brian Eno's seminal Music for Airports. 
+
+It wasn't until I had an opportunity to give a performance here in Montreal at a very interesting cathedral space that I finally finished my work on the foot control system and gave birth to the original foot foot script, which was called aFoot. The performance taking place in an acoustically rich environment inspired me to craft a performance using a viola, since I ecpected it would sound beautiful in such a reverberant space. As I am fairly new to the instrument, only been playing for a year, I decided to get a little help from my friend Norns to give me a little more confidence performing amongst other drone and ambient artists.. 
+
+Thanks to the ease of prototyping and the built in softcut engine, I was able to audition many different configurations of accompaniment in the lead up to the performance. It wasn't until I deleted everything, such as harmonizing playback of inputs, and pitch following what have you's, that I tried the simple approach presented here. 
+
+An approach that continues to embrace my tenents of slow play and surrender. Where, as a performer, I can also, almost, experience the moment as an audience member. With this looper one can add bits here and there and sit back to listen how they behave. Then you can add a little more when/if the moment feels right, or just play alongside the goings on. Or simply listen. 
+
+This process led to the creation of my album <a href="https://ululo.co/page_012">Iuvante</a>, which led to my performance, and now has led to the release of this script to the community. 
+
+In preperation for sharing with everyone I refactored the code to enable a very playable interface from the Norns alone. I have included the foot control part of the script, but I will not publicly support it. If you have a midi foot controller, and would like to use it with this script, get in touch with me and we will work it out. In fact, this could probably be a great intro to coding for Norns, to make the adjustments that might be needed for your setup. And I will be more than happy to tutor you! 
+
+To that end, I hope you enjoy making some music with this little looper. I know I have. 
+
+Thanks
+- ululo
 
 <img src="https://ululo.co/image/aFoot.jpg" width="300" height="100%">

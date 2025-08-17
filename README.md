@@ -12,6 +12,7 @@ There are six loops that range from 0 to 49 seconds in length. Each loop is cons
 
 # add performance demo video
 
+[![performance demo for foot foot](https://img.youtube.com/vi/ouQ4u71kL5E/0.jpg)](https://youtu.be/ouQ4u71kL5E?si=LZdJu3JnxOHj8nBA)this is a place holder for syntax
 
 **CONTROLS**
 

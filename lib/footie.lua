@@ -16,11 +16,7 @@ local ft = {}
 
 footie = midi.connect()
 
-recVox = {1,20,40,60,80,100}
 
-recRec = 1
-dVmet = {}
-dVlevel = {1,1,1,1,1,1}
 
 expCC = 0
 
@@ -34,15 +30,7 @@ function ft.init()
    print("footie connected!!!!")
   end
   
-  for i = 1, 6 do
-    dVmet[i] = metro.init()
-    dVmet[i].time =  lEnd[i]--lEnd[i] - lStart[i]
-    dVmet[i].event = function()
-      setSL(i)
-      update()
-    end
-    dVmet[i]:start()
-  end
+ 
   redraw()
   
   
@@ -182,13 +170,7 @@ function ft.microLoop( v )
   end
   print('micro looping called')
 end
-  
-function setSL( vox ) -- is this where to add the color updates for rects????
-  dVlevel[vox] = dVlevel[vox]*scPre[vox]
-  --update()
-  --redraw()
-  --print(vox , dVlevel[vox])
-end
+
 
 function ft.setRec( vox ) -- this is where to call the rect handler
 

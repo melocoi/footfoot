@@ -46,7 +46,7 @@ Here are the specific controls...
 
 ----------------------------------------
 
-- K1 + E1 - loop length -- indicated by size of blank space on track
+- K1 + E3 - loop length -- indicated by size of blank space on track
 
 
 # story time

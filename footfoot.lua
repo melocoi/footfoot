@@ -108,9 +108,12 @@
 -- from a Shaggs song
 --
 --
---
---
 -- the rabbit died
+--
+--
+--
+-- I'm pretty sure the
+-- cat did as well
 --
 -- 
 --
@@ -132,78 +135,70 @@
 -- now the actual code begins!!!
 ---------------------------------
 
-
-
--- for UI drawing
-local rects = include("lib/rectangles")
-
--- Constants
-local column_x = {7,26,46,66,86,106}     -- Fixed column X positions (6 columns)
-local rect_speed = {1,1,1,1,1,1}         -- Speed at which rectangles grow
-
--- State
-local active_rect = nil                  -- Currently growing rectangle
-local current_column = nil               -- Current selected column X
-local key2_down = false                  -- Tracks if key 2 is held
-local grow_direction = "down"            -- "up" or "down", fixed per key press
-local start_y = 6                        -- Y starting point for growing
-local clearing = false                   -- to clear loop
-local clear_time = nil
-local clear_timer = nil
-local clear_threshold = 2                -- time for long press to clear loop
--------------------------------------
-
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
 
 
 sc = include('lib/sftct')
 ft = include('lib/footie')
 
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+
+clearing = false                   -- to clear loop
+clear_time = nil
+clear_timer = nil
+clear_threshold = 2                -- time for long press to clear loop
+-------------------------------------
 --------------------------
 --------------------------
 -- screen controls  ------
 --------------------------
-width = 128
-height = 64
 
-posX = 40
-posY = 1
-i = 0.5
-freq = 0.0025
-amp = 2.75
-offSet = 10
-mult = 54.89
-brite = 16
+
+
+
+column_x = {6,26,46,66,86,106}     -- Fixed column X positions (6 columns)
+recVox = {0,20,40,60,80,100}
+recRec = 0
 
 lStart = {1,51,101,151,201,251}
+lEnd = {14,22,27,30,33,35} -- as duration
+lStarts = {0,0,0,0,0,0} -- offSet for start
+fall = {1,1,1,1,1,1} -- this is the playHead tracker
+tape = {{},{},{},{},{},{}} -- this is the tapeLoop tracker 
 
-lEnd = {14,22,27,30,33,35} --as duration
 scPre = {1,1,1,1,1,1}
 scLev = {1,1,1,1,1,1}
 scRte = {1,1,1,1,1,1}
 scFlip = {1,1,1,1,1,1}
+scPitch = {0,0,0,0,0,0}
 scPan = {0.3,0.6,-0.6,0.9,-0.9,-0.3}
 encPre = {"pre_1","pre_2","pre_3","pre_4","pre_5","pre_6"}
 encLev = {"lev_1","lev_2","lev_3","lev_4","lev_5","lev_6"}
+encPitch = {"pitch_1","pitch_2","pitch_3","pitch_4","pitch_5","pitch_6"}
 loopLength = {"loop_1","loop_2","loop_3","loop_4","loop_5","loop_6"}
 loopTimer = {loop1,loop2,loop3,loop4,loop5,loop6}
 
-fall = {1,1,1,1,1,1}
-fall1 = 1
-fall2 = 1
-fall3 = 1
-fall4 = 1
-fall5 = 1
-fall6 = 1
+justI = { 1/1, 16/15, 9/8, 6/5, 5/4, 4/3, 45/32, 3/2, 8/5, 5/3, 9/5, 15/8, 2/1 } --"Ptolemy"
+notes_nums = {}
+scale_names = {}
+MusicUtil = require("musicutil")
+for i = 1, #MusicUtil.SCALES do
+  table.insert(scale_names, MusicUtil.SCALES[i].name)
+end
 
+pRec = false
 micro = false
 posOff = 0.0675
-posPos = 1
 curRec = 0
 recording = false
-fTime = 26
+fTime = 26 -- for flip flop timers randomization
 K1 = false
-
--- timers to trigger flipping and flopping actions
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+-- builds timers to trigger flipping and flopping actions
 flipper = metro.init()
 flipper.time = math.random(1,26)
 flipper.event = function()
@@ -215,6 +210,7 @@ flopper = metro.init()
 flopper.time = math.random(1,26)
 flopper.event = function()
   flop()
+  screen.ping()
   --flop around the stereo image of the loops
 end
 
@@ -222,38 +218,63 @@ end
 --------------------------
 
 function init()
-
+  
+  -- this sets up the tape tables for drawing to screen
+  -- there are 52 lines we use maximum 49 for the loop
+  -- the final three are to always have an indicator for the PRE value
+  for x=1,6 do
+    -- randomize loop lengths at startup
+    lEnd[x] = math.random(42) + 3 
+    
+    for y=1,52 do
+        -- fill tapes with initial values for tapeLoop
+        tape[x][y] = 1 
+    end
+  end
+  
+  -- initialize other libraries
   sc.init()
   ft.init()
   audio.monitor_mono()
   
+  --builds timers to drive playhead animations
   for i=1,6 do
     loopTimer[i] = metro.init()
-    loopTimer[i].time = lEnd[i]/(lEnd[i])
-    rect_speed[i] = loopTimer[i].time
+    loopTimer[i].time = 1
+    
     loopTimer[i].event = function()
+      if i == 1 then
+        redraw()
+      end
       if micro and (curRec+1) == i then
         fall[i] = (((fall[i]+0 ) % (lEnd[i])))
       else
-        fall[i] = (((fall[i]+scRte[i] ) % (lEnd[i])))
+        fall[i] = ( (fall[i] + scRte[i] ) % (lEnd[i]-lStarts[i]) )
       end
-      checkRecs(i)
-      --update()
-      --redraw()
+     
+      -- this should erase lines based on playhead position and PRE value
+      if curRec+1 == i and recording then
+        tape[i][math.floor(fall[i]+1.5)] = 16 
+        -- draws white lines while recording
+      else
+        if tape[i][math.floor(fall[i]+1.5)] < 1.0 then
+           tape[i][math.floor(fall[i]+1.5)] = 1 
+           -- keeps lines from going black forever
+        else
+          tape[i][math.floor(fall[i]+1.5)] = tape[i][math.floor(fall[i]+1.5)] * scPre[i] 
+          -- reduces brightness of line based on PRE value
+          -- possibly add 1 here to keep line alive longer
+          --print(tape[i][fall[i]+1],scPre[i],i,fall[i])
+        end
+      end
     end
     loopTimer[i]:start()
   end
- 
+  
+  -- start flip and flop timers
   flipper:start()
   flopper:start()
 
-  
-end
-
-function checkRecs(v)
-  if (curRec+1) == v then
-    checkActiveRecs()
-  end
 end
 
 function flip(v)
@@ -263,15 +284,25 @@ function flip(v)
   local tV = 0
   local rate = {-1,1}
   local dir = math.random(2)
+  local rand = math.random(100)
+  local div = 0
   
   if recording and curRec == (voice-1) then
   -- DO NOTHING
   print('not flipping on purpose')
   elseif v == nil then
     tV = voice
+    if rand < scPitch[tV] then
+      div = (justI[(notes_nums[math.random(8)] % 12)+1]/2) * rate[dir]
+      print(tV,div)
+    else
+      div = rate[dir]
+    end
     if scFlip[tV] == 1 then
-      softcut.rate(tV,rate[dir])
-      scRte[tV] = rate[dir]
+      softcut.rate(tV,div)
+      scRte[tV] = div
+      --softcut.rate(tV,rate[dir])
+      --scRte[tV] = rate[dir]
     end
   elseif not(v == nil) then
     tV = v
@@ -283,7 +314,7 @@ function flip(v)
   end
   
   flipper.time = math.random(1,fTime)
-  print('voice',tV,rate[dir],'dir')
+  --print('voice',tV,scRte[tV],'dir')
   
 end
 
@@ -293,7 +324,7 @@ function flop(v)
   
   for i = 1, #scPan do
     softcut.pan(i,scPan[i])
-     print('voice',i,scPan[i],'pan')
+    --print('voice',i,scPan[i],'pan')
   end
   flopper.time = math.random(1,fTime)
 end
@@ -306,25 +337,34 @@ function shuffle(tbl)
   end
 end
 
-function updateLoops(v,t)
-  lEnd[v] = math.min(t,49) 
-  loopTimer[v].time = lEnd[v]/lEnd[v]
+function updateLoops(v,e)
+  lEnd[v] = math.min(e,49) 
+  softcut.loop_end(v,  lEnd[v] + (lStart[v]+lStarts[v]))
+  --print("loop end", lEnd[v] + (lStart[v]+lStarts[v]))
+end
+
+function updateStarts(v,s)
+  lStarts[v] = math.min(s,49) 
+  softcut.loop_start(v,  lStart[v] + lStarts[v])
  
-  softcut.loop_end(v,  lEnd[v] + lStart[v])
-  
+  print("loop start", lStart[v] + lStarts[v])
 end
 
 function clearLoop()
   -- to erase the currently selected loop
-  softcut.buffer_clear_region(lStart[curRec+1]-1,lEnd[curRec+1]+2,0,0) -- a bit over the buffer length to ensure deletion
-  dVlevel[curRec+1] = 1
-  clearVox(curRec+1)
+  softcut.buffer_clear_region(lStart[curRec+1]-1,lEnd[curRec+1]+2,0,0) 
+  -- a bit over the buffer length to ensure deletion
+  
+  -- deleting tape table contents
+  for i=1,52 do
+    tape[curRec+1][i] = 1
+  end
   
   print("loop", curRec + 1 , "cleared",(lStart[curRec+1]-1) + (lEnd[curRec+1]+2))
 end
 
 function key (n,z)
-  
+  redraw()
   if n == 1 and z == 1 then
     K1 = true
   end
@@ -357,15 +397,24 @@ function key (n,z)
       
       if recording then
         softcut.rec_level(curRec+1,0)
-        handle_rectangle_key(curRec+1, 0)
         recording = false
         print(recording)
       else
+        if pRec then
+          --do nothing if record while pitched is selected
+        else  
+          -- change speed to normal for recording
+          if scRte[curRec+1] < 0 then 
+            scRte[curRec+1] = -1
+            softcut.rate(curRec+1,-1)
+          else
+            scRte[curRec+1] = 1
+            softcut.rate(curRec+1,1)
+          end
+        end
         softcut.rec_level(curRec+1,1)
-        ft.setRec(curRec+1)
-        handle_rectangle_key(curRec+1, 1)
         recording = true
-        print(recording)
+        print(recording,"recording loop",curRec+1)
       end
       
       clearing = true
@@ -375,7 +424,6 @@ function key (n,z)
           if clearing and (util.time() - clear_time) >= clear_threshold then
             print("long press detected... clearing loop")
             softcut.rec_level(curRec+1,0)
-            handle_rectangle_key(curRec+1, 0)
             recording = false
             clearLoop()
             
@@ -396,7 +444,8 @@ function key (n,z)
       ft.microLoop(z)
     else
       curRec = (curRec + 1) % 6
-      ft.setVoice(curRec + 1)
+      recRec = recVox[curRec + 1]  
+      --ft.setVoice(curRec + 1)
       print('recording armed for voice',curRec + 1)
     end
   end
@@ -410,12 +459,10 @@ function key (n,z)
 end
 
 function enc (n,d)
-
+  redraw()
   if n==1 then
     if K1 then
-      
-    updateLoops(curRec+1,util.clamp(lEnd[curRec + 1] + (d * 0.5),0,49))
-    params:set(loopLength[curRec+1],lEnd[curRec + 1])
+    -- maybe to use for future alt options????
     
     elseif micro then
       posOff = posOff + (d*0.01)
@@ -428,29 +475,40 @@ function enc (n,d)
 
   -- ENCODER 2 controls LEVEL
   if n == 2 then
-    scLev[curRec + 1] = util.clamp(scLev[curRec + 1] + (d * 0.06),0,1)
-    sc.setLevel(curRec+1,scLev[curRec+1])
+    if K1 then
+      -- TODO
+      -- to change start so that it effects the end 
+      -- this isn't working out in the gui, for some reason
+      
+      --updateStarts(curRec+1,util.clamp(lStarts[curRec + 1] + (d * 1),0,49))
+      --updateLoops(curRec+1,lEnd[curRec + 1])
+      --params:set(loopLength[curRec+1],lStarts[curRec + 1])
     
-    print(scLev[curRec+1])
+    else
+        
+      scLev[curRec + 1] = util.clamp(scLev[curRec + 1] + (d * 0.06),0,1)
+      sc.setLevel(curRec+1,scLev[curRec+1])
+      print("loop",curRec+1, "level",scLev[curRec+1])
+    end
+    
     
   end
   
   -- ENCODER 3 controls PRE
   if n == 3 then
-    scPre[curRec + 1] = util.clamp(scPre[curRec + 1] + (d * 0.06),0,1)
-    sc.setPre(curRec+1,scPre[curRec+1])
-    
-    print(scPre[curRec+1])
-    
+    if K1 then
+      updateLoops(curRec+1,util.clamp(lEnd[curRec + 1] + (d * 1),0,49))
+      params:set(loopLength[curRec+1],lEnd[curRec + 1])
+    else
+      scPre[curRec + 1] = util.clamp(scPre[curRec + 1] + (d * 0.06),0,1)
+      sc.setPre(curRec+1,scPre[curRec+1])
+      
+      print("loop",curRec+1,"PRE level",scPre[curRec+1])
+    end
   end
 
 end
 
-function refresh()
-  
-  redraw()
-  
-end
 
 
 ------------------------------------------------------------------
@@ -465,323 +523,71 @@ end
 ------------------------------------------------------------------
 ------------------------------------------------------------------
 
+
+-- TODO
+-- 
+-- way to handle adjustable loopStart times
+--
+-- CBB
+-- figure out a way to break up drawing of BG and playheads. 
+-- should not need to redraw every element every time.
+-- hope this will fix "warning: screen event Q full!" errors
+-- doesn't bother me too much at the moment. 
+-- just think it could be better
+
+
 function redraw()
   screen.clear()
   ---------------------
   ------------------------------------------
   ---------------------
   -- recording selected
-  --screen.level(16)
+  -- rectangle drawn around active voice
   screen.level(math.ceil(scLev[curRec+1] * 16))
   screen.rect(4+recRec,4,18,56)
   screen.fill()
   ---------------------
   ------------------------------------------
   ---------------------
+  
+  -- draw bg field 
   -- voice 1
-  screen.level(1)
-  screen.rect(7,6,14,52)
-  screen.fill()
-  ---------------------
-  ---------------------
-  screen.level(0)
-  screen.line_width(3)
-  screen.move(7,lEnd[1]+6)
-  screen.line(21,lEnd[1]+6)
-  screen.stroke(2)
-  ---------------------
-  
-  -- voice PRE
-  screen.level(math.ceil(scPre[1]*16))
-  --screen.rect(7,20,14,38)
-  screen.rect(7,lEnd[1]+6,14,52-(lEnd[1]+6)+6)
-  screen.fill()
-  ---------------------
-  ------------------------------------------
-  ---------------------
-  -- voice 2
-  screen.level(1)
-  screen.rect(26,6,14,52)
-  screen.fill()
-  ---------------------
-  ---------------------
-  screen.level(0)
-  screen.line_width(3)
-  screen.move(26,lEnd[2]+6)
-  screen.line(40,lEnd[2]+6)
-  screen.stroke(2)
-  ---------------------
-  ---------------------
-  
-  -- voice PRE
-  screen.level(math.ceil(scPre[2]*16))
-  --screen.rect(26,24,14,34)
-  screen.rect(26,lEnd[2]+6,14,52-(lEnd[2]+6)+6)
-  screen.fill()
-  ---------------------
-  ------------------------------------------
-  ---------------------
-  -- voice 3
-  screen.level(1)
-  screen.rect(46,6,14,52)
-  screen.fill()
-  ---------------------
-  ---------------------
-  screen.level(0)
-  screen.line_width(3)
-  screen.move(46,lEnd[3]+6)
-  screen.line(60,lEnd[3]+6)
-  screen.stroke(2)
-  ---------------------
-  ---------------------
-  
-  -- voice PRE
-  screen.level(math.ceil(scPre[3]*16))
-  --screen.rect(46,30,14,28)
-  screen.rect(46,lEnd[3]+6,14,52-(lEnd[3]+6)+6)
-  screen.fill()
-  ---------------------
-  ------------------------------------------
-  ---------------------
-  -- voice 4
-  screen.level(1)
-  screen.rect(66,6,14,52)
-  screen.fill()
-  ---------------------
-  ---------------------
-  screen.level(0)
-  screen.line_width(3)
-  screen.move(66,lEnd[4]+6)
-  screen.line(80,lEnd[4]+6)
-  screen.stroke(2)
-  ---------------------
-  ---------------------
-  
-  -- voice PRE
-  screen.level(math.ceil(scPre[4]*16))
-  --screen.rect(66,36,14,22)
-  screen.rect(66,lEnd[4]+6,14,52-(lEnd[4]+6)+6)
-  screen.fill()
-  ---------------------
-  ------------------------------------------
-  ---------------------
-  -- voice 5
-  screen.level(1)
-  screen.rect(86,6,14,52)
-  screen.fill()
-  ---------------------
-  ---------------------
-  screen.level(0)
-  screen.line_width(3)
-  screen.move(86,lEnd[5]+6)
-  screen.line(100,lEnd[5]+6)
-  screen.stroke(2)
-  ---------------------
-  ---------------------
-  
-  -- voice PRE
-  screen.level(math.ceil(scPre[5]*16))
-  --screen.rect(86,42,14,16)
-  screen.rect(86,lEnd[5]+6,14,52-(lEnd[5]+6)+6)
-  screen.fill()
-  ---------------------
-  ------------------------------------------
-  ---------------------
-   -- voice 6
-  screen.level(1)
-  screen.rect(106,6,14,52)
-  screen.fill()
-  ---------------------
-  ---------------------
-  screen.level(0)
-  screen.line_width(3)
-  screen.move(106,lEnd[6]+6)
-  screen.line(120,lEnd[6]+6)
-  screen.stroke(2)
-  ---------------------
-  ---------------------
-  
-  -- voice PRE
-  screen.level(math.ceil(scPre[6]*16))
-  --screen.rect(106,48,14,10)
-  screen.rect(106,lEnd[6]+6,14,52-(lEnd[6]+6)+6)
-  screen.fill()
-  ---------------------
-  ------------------------------------------
-  ------------------------------------------
-  ------------------------------------------
-  ---------------------
-  -- RECTS DRAWING
-  rects:draw()
-
-  if active_rect then
-    draw_wrapped_rect(active_rect)
+  for x=1,6 do
+    screen.level(1)
+    screen.rect(column_x[x],6,14,52)
+    screen.fill()
   end
-  ---------------------
-  ------------------------------------------
-  ------------------------------------------
-  ------------------------------------------
-  ---------------------
+ 
+  ------------------------
+  -- new algorithmic drawing of all tape tables
   
-  -- falling line 1
-  screen.level(0)
-  screen.line_width(1)
-  screen.move(7,fall[1]+7)
-  screen.line(21,fall[1]+7)
-  screen.stroke(2) 
-  ----------------------
-  -- falling line 2
-  screen.level(0)
-  screen.line_width(1)
-  screen.move(26,fall[2]+7)
-  screen.line(40,fall[2]+7)
-  screen.stroke(2) 
-  ----------------------
-  -- falling line 3
-  screen.level(0)
-  screen.line_width(1)
-  screen.move(46,fall[3]+7)
-  screen.line(60,fall[3]+7)
-  screen.stroke(2) 
-  ----------------------
-  -- falling line 4
-  screen.level(0)
-  screen.line_width(1)
-  screen.move(66,fall[4]+7)
-  screen.line(80,fall[4]+7)
-  screen.stroke(2) 
-  ---------------------
-  -- falling line 5
-  screen.level(0)
-  screen.line_width(1)
-  screen.move(86,fall[5]+7)
-  screen.line(100,fall[5]+7)
-  screen.stroke(2) 
-  ---------------------
-  -- falling line 6
-  screen.level(0)
-  screen.line_width(1)
-  screen.move(106,fall[6]+7)
-  screen.line(120,fall[6]+7)
-  screen.stroke(2) 
-  ---------------------
+  for x=1,6 do
+    for y=1,52 do
+      if y < lEnd[x] and y > lStarts[x] then
+        screen.level(math.ceil(tape[x][y]))
+      else
+        screen.level(math.ceil(16*scPre[x]))
+      end
+      screen.line_width(1)
+      screen.move(column_x[x],y+6)
+      screen.line(column_x[x]+14,y+6)
+      screen.stroke(1) 
+    end
+  end
+  
+ 
+  ------------------------
+  
+  -- falling lines/playHeads
+  for i=1,6 do
+    screen.level(0)
+    screen.line_width(1)
+    screen.move(column_x[i],fall[i]+6+lStarts[i])
+    screen.line(column_x[i]+14,fall[i]+6+lStarts[i])
+    screen.stroke(2) 
+  end
+ 
   
   screen.update()
 end
 
--------------
--------------
--- rect drawing functions
-
-
--- called from footie, should update to record from key 2 also
-function handle_rectangle_key(v, z)
-  
-    if z == 1 then -- Key down
-      key2_down = true
-      current_column = column_x[v] -- base this on the ui in aFoot
-      grow_direction = scRte[v] > 0 and "down" or "up" -- base this on the scRte value < 0 or > 0 
-      start_y = fall[v]+7 -- to update for the Fall[curRec+1]+7
-      start_new_rectangle(start_y,v)
-    else -- Key up
-      key2_down = false
-      if active_rect then
-        finalize_active_rect()
-      end
-    end
-end
-
--- Start a new growing rectangle from a starting Y
-function start_new_rectangle(y,v)
-  active_rect = {
-    x = current_column,
-    y = y,
-    w = 14,
-    h = 0,
-    color = 16,
-    vox = v
-  }
-end
-
--- Finalize active rectangle and move it to fading list
-function finalize_active_rect()
-  rects:add(
-    active_rect.x,
-    active_rect.y,
-    active_rect.w,
-    active_rect.h,
-    active_rect.color,
-    grow_direction,
-    curRec+1 
-  )
-  active_rect = nil
-end
--- will want to utilize curRec and the timer associated with it. 
-function checkActiveRecs()
-  
-  if active_rect then
-    active_rect.h = active_rect.h + 1 --(1 / lEnd[curRec+1])
-    
-    --active_rect.h = (fall[curRec+1]+7) - active_rect.y-- speed needs to be based on loopTimer for this curRec+1 vox
-
-    if grow_direction == "down" then
-      if active_rect.y + active_rect.h >= (lEnd[curRec+1]+6) then --update the 64 to use lEnd[curRec+1]+6???
-        finalize_active_rect()
-        if key2_down then start_new_rectangle(6) end
-      end
-    else -- direction == "up"
-      if active_rect.y - active_rect.h <= 6 then
-        finalize_active_rect()
-        if key2_down then start_new_rectangle(lEnd[curRec+1]+6) end --update the 64 to use lEnd[curRec+1]+6???
-      end
-    end
-  end
-  
-end
-
-function update()
-  rects:update()
-  
-  
-end
-
--- Draw the growing rectangle with wrap support
-function draw_wrapped_rect(r)
-  screen.level(math.floor(r.color))
-  local y = r.y
-  local h = r.h
-
-  if grow_direction == "down" then
-    if y + h <= lEnd[curRec+1]+6 then --update the 64 to use lEnd[curRec+1]+6???
-      screen.rect(r.x, y, r.w, h)
-      screen.fill()
-    else
-      local h1 = lEnd[curRec+1]+6 - y --update the 64 to use lEnd[curRec+1]+6???
-      local h2 = h - h1
-      screen.rect(r.x, y, r.w, h1)
-      screen.fill()
-      screen.rect(r.x, 6, r.w, h2)
-      screen.fill()
-    end
-  else -- up
-    if y - h >= 6 then
-      screen.rect(r.x, y - h, r.w, h)
-      screen.fill()
-    else
-      local h1 = y
-      local h2 = h - h1
-      screen.rect(r.x, 6, r.w, h1)
-      screen.fill()
-      screen.rect(r.x, lEnd[curRec+1]+6 - h2, r.w, h2)  --update the 64 to use lEnd[curRec+1]+6???
-      screen.fill()
-    end
-  end
-end
-
-function clearRects()
-  rects:clear()
-end
-
-function clearVox(v)
-  rects:remove_by_vox(v)
-end

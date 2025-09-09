@@ -439,14 +439,18 @@ function key (n,z)
   
   -- KEY 3 selects loop 
   -- KEY 1 and KEY 3 does micro loop
-   if n == 3 and z == 1 then
-    if K1 then
-      ft.microLoop(z)
+  if n == 3 and z == 1 then
+    if recording then
+      --protects from changing tracks while recording
     else
-      curRec = (curRec + 1) % 6
-      recRec = recVox[curRec + 1]  
-      --ft.setVoice(curRec + 1)
-      print('recording armed for voice',curRec + 1)
+      if K1 then
+        ft.microLoop(z)
+      else
+        curRec = (curRec + 1) % 6
+        recRec = recVox[curRec + 1]  
+        --ft.setVoice(curRec + 1)
+        print('recording armed for voice',curRec + 1)
+      end
     end
   end
   

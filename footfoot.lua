@@ -167,7 +167,7 @@ lStart = {1,51,101,151,201,251}
 lEnd = {14,22,27,30,33,35} -- as duration
 lStarts = {0,0,0,0,0,0} -- offSet for start
 fall = {1,1,1,1,1,1} -- this is the playHead tracker
-tape = {{},{},{},{},{},{}} -- this is the tapeLoop tracker 
+tapeD = {{},{},{},{},{},{}} -- this is the tapeLoop tracker 
 
 scPre = {1,1,1,1,1,1}
 scLev = {1,1,1,1,1,1}
@@ -228,7 +228,7 @@ function init()
     
     for y=1,52 do
         -- fill tapes with initial values for tapeLoop
-        tape[x][y] = 1 
+        tapeD[x][y] = 1 
     end
   end
   
@@ -251,17 +251,16 @@ function init()
       else
         fall[i] = ( (fall[i] + scRte[i] ) % (lEnd[i]-lStarts[i]) )
       end
-     
       -- this should erase lines based on playhead position and PRE value
       if curRec+1 == i and recording then
-        tape[i][math.floor(fall[i]+1.5)] = 16 
+        tapeD[i][math.floor(fall[i]+1.5)] = 16 
         -- draws white lines while recording
       else
-        if tape[i][math.floor(fall[i]+1.5)] < 1.0 then
-           tape[i][math.floor(fall[i]+1.5)] = 1 
+        if tapeD[i][math.floor(fall[i]+1.5)] < 1.0 then
+           tapeD[i][math.floor(fall[i]+1.5)] = 1 
            -- keeps lines from going black forever
         else
-          tape[i][math.floor(fall[i]+1.5)] = tape[i][math.floor(fall[i]+1.5)] * scPre[i] 
+          tapeD[i][math.floor(fall[i]+1.5)] = tapeD[i][math.floor(fall[i]+1.5)] * scPre[i] 
           -- reduces brightness of line based on PRE value
           -- possibly add 1 here to keep line alive longer
           --print(tape[i][fall[i]+1],scPre[i],i,fall[i])
@@ -357,7 +356,7 @@ function clearLoop()
   
   -- deleting tape table contents
   for i=1,52 do
-    tape[curRec+1][i] = 1
+    tapeD[curRec+1][i] = 1
   end
   
   print("loop", curRec + 1 , "cleared",(lStart[curRec+1]-1) + (lEnd[curRec+1]+2))
@@ -568,7 +567,7 @@ function redraw()
   for x=1,6 do
     for y=1,52 do
       if y < lEnd[x] and y > lStarts[x] then
-        screen.level(math.ceil(tape[x][y]))
+        screen.level(math.ceil(tapeD[x][y]))
       else
         screen.level(math.ceil(16*scPre[x]))
       end

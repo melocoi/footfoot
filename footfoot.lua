@@ -362,21 +362,9 @@ function clearLoop()
   print("loop", curRec + 1 , "cleared",(lStart[curRec+1]-1) + (lEnd[curRec+1]+2))
 end
 
-function key (n,z)
-  redraw()
-  if n == 1 and z == 1 then
-    K1 = true
-  end
-  
-  if n == 1 and z == 0 then
-    K1 = false
-  end
-  
-  -- KEY 2 to start RECORDING, KEY 2 again to STOP RECORDING
-  -- KEY 2 LONG PRESS to CLEAR loop
-  -- KEY 1 and KEY 2 flips direction of track
-  -- KEY 1 and KEY 2 LONG PRESS turns off/on auto flipping for track.
-  if n == 2 and z == 1 then
+function recKey (z)
+
+if z == 1 then
     if K1 then -- if key one is held, flip current track
       print("flip flip")
       flip(curRec+1)
@@ -431,10 +419,31 @@ function key (n,z)
     end
   end
   
-  if n == 2 and z == 0 then
+  if z == 0 then
     clearing = false
   end
+
+end
+function key (n,z)
+  redraw()
+  if n == 1 and z == 1 then
+    K1 = true
+  end
   
+  if n == 1 and z == 0 then
+    K1 = false
+  end
+  
+  -- KEY 2 to start RECORDING, KEY 2 again to STOP RECORDING
+  -- KEY 2 LONG PRESS to CLEAR loop
+  -- KEY 1 and KEY 2 flips direction of track
+  -- KEY 1 and KEY 2 LONG PRESS turns off/on auto flipping for track.
+  
+ 
+  if n == 2 then
+    recKey(z)
+  end
+    
   
   -- KEY 3 selects loop 
   -- KEY 1 and KEY 3 does micro loop

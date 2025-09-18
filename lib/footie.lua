@@ -64,17 +64,22 @@ footie.event = function(data)
         s1 = false
       end
       if s == 2 and d.val == 1 then
+        
+        recKey(d.val)
+        --[[
         --do something for button 2
         softcut.rec_level(curRec+1,d.val)
-        ft.setRec(curRec+1)
-        handle_rectangle_key(curRec+1, d.val)
-        recording = true
+        --ft.setRec(curRec+1)
+        --handle_rectangle_key(curRec+1, d.val)
+        recording = true]]
         print(recording)
       end
       if s == 2 and d.val == 0 then
+        recKey(d.val)
+        --[[
         softcut.rec_level(curRec+1,d.val)
-        handle_rectangle_key(curRec+1, d.val)
-        recording = false
+        --handle_rectangle_key(curRec+1, d.val)
+        recording = false]]
         print(recording)
       end
       if s == 3 and d.val == 1 then
@@ -109,7 +114,7 @@ footie.event = function(data)
       screen.ping()  
       
     end
-    
+    redraw()
    --print("cc " .. d.cc .. " = " .. d.val)
   end
 end

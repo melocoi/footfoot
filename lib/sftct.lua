@@ -46,6 +46,8 @@ function sc.init()
   -------------------------------------------------------------------------
   -- params setup for loops
   
+  params:add_separator("foot","footfoot parameters")
+  
   params:add_group("loop lengths",6)
   
   params:add{id="loop_1", name="loop 1", type="control", 
@@ -69,6 +71,17 @@ function sc.init()
  
   params:add_group("pitch shifting",9)
   
+  params:add_binary("pRec", "pitched recording?", "toggle", 0)
+  params:set_action("pRec",function(x)
+    if x == 0 then
+      pRec = false
+    elseif x == 1 then
+      pRec = true
+    end
+    print("will record while pitch shifted???",pRec)
+  end)
+  
+  
   params:add{type = "option", id = "scale", name = "scale",
     options = scale_names, default = 1,
     action = function() build_scale() end}
@@ -80,15 +93,7 @@ function sc.init()
       end
     end
   }
-  params:add_binary("pRec", "pitched recording?", "toggle", 0)
-  params:set_action("pRec",function(x)
-    if x == 0 then
-      pRec = false
-    elseif x == 1 then
-      pRec = true
-    end
-    print("will record while pitch shifted???",pRec)
-  end)
+  
   params:add{id="pitch_1", name="pitch Chance 1", type="control", 
     controlspec=controlspec.new(0,100,'lin',0,0,"%"),
     action=function(x) sc.setChance(1,x) end}
@@ -107,6 +112,50 @@ function sc.init()
   params:add{id="pitch_6", name="pitch Chance 6", type="control", 
     controlspec=controlspec.new(0,100,'lin',0,0,"%"),
     action=function(x) sc.setChance(6,x) end}
+  
+  
+  
+  params:add_group("track flipping",8)
+  
+  params:add_binary("pFlip", "flip tracks?", "toggle", 1)
+  params:set_action("pFlip",function(x)
+   
+      for i=1,6 do
+        scFlip[i]=x 
+        --sc.setFlip(i,x*100)
+      end
+      --params:set("global_2",x*100)
+      
+    print("will flip tracks")
+  end)
+  
+   params:add{id="global_2", name="Global Chance", type="control", 
+    controlspec=controlspec.new(0,100,'lin',0,100,"%"),
+    action=function(x) 
+      for i=1,6 do
+        sc.setFlip(i,x) 
+      end
+    end
+  }
+  params:add{id="flip_1", name="flip Chance 1", type="control", 
+    controlspec=controlspec.new(0,100,'lin',0,100,"%"),
+    action=function(x) sc.setFlip(1,x) end}
+  params:add{id="flip_2", name="flip Chance 2", type="control", 
+    controlspec=controlspec.new(0,100,'lin',0,100,"%"),
+    action=function(x) sc.setFlip(2,x) end}
+  params:add{id="flip_3", name="flip Chance 3", type="control", 
+    controlspec=controlspec.new(0,100,'lin',0,100,"%"),
+    action=function(x) sc.setFlip(3,x) end}
+  params:add{id="flip_4", name="flip Chance 4", type="control", 
+    controlspec=controlspec.new(0,100,'lin',0,100,"%"),
+    action=function(x) sc.setFlip(4,x) end}
+  params:add{id="flip_5", name="flip Chance 5", type="control", 
+    controlspec=controlspec.new(0,100,'lin',0,100,"%"),
+    action=function(x) sc.setFlip(5,x) end}
+  params:add{id="flip_6", name="flip Chance 6", type="control", 
+    controlspec=controlspec.new(0,100,'lin',0,100,"%"),
+    action=function(x) sc.setFlip(6,x) end}
+
 
   params:add_group("loop levels",6)
   
@@ -187,6 +236,9 @@ function sc.setChance(v,x)
   params:set(encPitch[v], scPitch[v])
 end
 
-
+function sc.setFlip(v,x)
+  scFlipChnc[v] = x
+  params:set(encFlip[v], scFlipChnc[v])
+end
 
 return sc

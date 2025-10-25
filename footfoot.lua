@@ -173,11 +173,13 @@ scPre = {1,1,1,1,1,1}
 scLev = {1,1,1,1,1,1}
 scRte = {1,1,1,1,1,1}
 scFlip = {1,1,1,1,1,1}
+scFlipChnc={100,100,100,100,100,100}
 scPitch = {0,0,0,0,0,0}
 scPan = {0.3,0.6,-0.6,0.9,-0.9,-0.3}
 encPre = {"pre_1","pre_2","pre_3","pre_4","pre_5","pre_6"}
 encLev = {"lev_1","lev_2","lev_3","lev_4","lev_5","lev_6"}
 encPitch = {"pitch_1","pitch_2","pitch_3","pitch_4","pitch_5","pitch_6"}
+encFlip = {"flip_1","flip_2","flip_3","flip_4","flip_5","flip_6"}
 loopLength = {"loop_1","loop_2","loop_3","loop_4","loop_5","loop_6"}
 loopTimer = {loop1,loop2,loop3,loop4,loop5,loop6}
 
@@ -253,17 +255,21 @@ function init()
       end
       -- this should erase lines based on playhead position and PRE value
       if curRec+1 == i and recording then
-        tapeD[i][math.floor(fall[i]+1.5)] = 16 
+        tapeD[i][math.floor(fall[i]+0.5)] = 16 
         -- draws white lines while recording
       else
-        if tapeD[i][math.floor(fall[i]+1.5)] < 1.0 then
-           tapeD[i][math.floor(fall[i]+1.5)] = 1 
-           -- keeps lines from going black forever
+        if tapeD[i][math.floor(fall[i]+0.5)] == nil then
+        
         else
-          tapeD[i][math.floor(fall[i]+1.5)] = tapeD[i][math.floor(fall[i]+1.5)] * scPre[i] 
-          -- reduces brightness of line based on PRE value
-          -- possibly add 1 here to keep line alive longer
-          --print(tape[i][fall[i]+1],scPre[i],i,fall[i])
+          if tapeD[i][math.floor(fall[i]+0.5)] < 1.0 then
+             tapeD[i][math.floor(fall[i]+0.5)] = 1 
+             -- keeps lines from going black forever
+          else
+            tapeD[i][math.floor(fall[i]+0.5)] = tapeD[i][math.floor(fall[i]+0.5)] * scPre[i] 
+            -- reduces brightness of line based on PRE value
+            -- possibly add 1 here to keep line alive longer
+            --print(tape[i][fall[i]+1],scPre[i],i,fall[i])
+          end
         end
       end
     end
@@ -291,23 +297,29 @@ function flip(v)
   print('not flipping on purpose')
   elseif v == nil then
     tV = voice
-    if rand < scPitch[tV] then
+    if rand <= scPitch[tV] then
       div = (justI[(notes_nums[math.random(8)] % 12)+1]/2) * rate[dir]
       print(tV,div)
     else
       div = rate[dir]
     end
     if scFlip[tV] == 1 then
-      softcut.rate(tV,div)
-      scRte[tV] = div
-      --softcut.rate(tV,rate[dir])
-      --scRte[tV] = rate[dir]
+      local randChnc = math.random(1,100)
+      if randChnc <= scFlipChnc[tV]then
+        softcut.rate(tV,div)
+        scRte[tV] = div
+        --softcut.rate(tV,rate[dir])
+        --scRte[tV] = rate[dir]
+      end
     end
   elseif not(v == nil) then
     tV = v
     if scFlip[tV] == 1 then
-      scRte[tV] = scRte[tV]*(-1)
-      softcut.rate(tV,scRte[tV])
+      local randChnc = math.random(1,100)
+      if randChnc <= scFlipChnc[tV]then
+        scRte[tV] = scRte[tV]*(-1)
+        softcut.rate(tV,scRte[tV])
+      end
     end        
     
   end
@@ -369,6 +381,7 @@ if z == 1 then
       print("flip flip")
       flip(curRec+1)
       
+      -- long press detection to disable/enable flipping for current track
       clearing = true
       clear_time = util.time()
       clear_timer = clock.run(function()
@@ -489,7 +502,7 @@ function enc (n,d)
   if n == 2 then
     if K1 then
       -- TODO
-      -- to change start so that it effects the end 
+      -- to change loopStart so that it effects the end 
       -- this isn't working out in the gui, for some reason
       
       --updateStarts(curRec+1,util.clamp(lStarts[curRec + 1] + (d * 1),0,49))
@@ -498,7 +511,7 @@ function enc (n,d)
     
     else
         
-      scLev[curRec + 1] = util.clamp(scLev[curRec + 1] + (d * 0.06),0,1)
+      scLev[curRec + 1] = util.clamp(scLev[curRec + 1] + (d * 0.01),0,1)
       sc.setLevel(curRec+1,scLev[curRec+1])
       print("loop",curRec+1, "level",scLev[curRec+1])
     end
@@ -512,7 +525,7 @@ function enc (n,d)
       updateLoops(curRec+1,util.clamp(lEnd[curRec + 1] + (d * 1),0,49))
       params:set(loopLength[curRec+1],lEnd[curRec + 1])
     else
-      scPre[curRec + 1] = util.clamp(scPre[curRec + 1] + (d * 0.06),0,1)
+      scPre[curRec + 1] = util.clamp(scPre[curRec + 1] + (d * 0.01),0,1)
       sc.setPre(curRec+1,scPre[curRec+1])
       
       print("loop",curRec+1,"PRE level",scPre[curRec+1])
